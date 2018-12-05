@@ -5,11 +5,25 @@
 CRGB leds[NUM_LEDS];
 
 #define PIN 13
-int lcount = 0; 
+int max_bright = 200; 
+int ledMode = 3;
+int thissat = 255;
+int index = 0;      
+int ihue = 0;  
+
+void one_color_all(int cred, int cgrn, int cblu) {   
+  for (int i = 0 ; i < NUM_LEDS; i++ ) {
+    leds[i].setRGB( cred, cgrn, cblu);
+  }
+}
 
 void setup()
 {
+  Serial.begin(9600);
+  LEDS.setBrightness(max_bright);
   LEDS.addLeds<WS2812, PIN, RGB>(leds, NUM_LEDS);
+  one_color_all(0, 0, 0);          
+  LEDS.show(); 
 }
 
 void set_color_led(int adex, int cred, int cgrn, int cblu) {
@@ -65,49 +79,29 @@ void Strobe(byte red, byte green, byte blue, int StrobeCount, int FlashDelay, in
   delay(EndPause);
 }
 
-
-void pacman() {                                  //-m24-REALLY TERRIBLE PACMAN CHOMPING EFFECT
-  int s = int(NUM_LEDS / 4);
-  lcount++;
-  if (lcount > 5) {
-    lcount = 0;
+void rainbow_loop() {               
+  index++;
+  ihue = ihue + 10;
+  if (index >= NUM_LEDS) {
+    index = 0;
   }
-  if (lcount == 0) {
-    for (int i = 0 ; i < NUM_LEDS; i++ ) {
-      set_color_led(i, 255, 255, 0);
-    }
+  if (ihue > 255) {
+    ihue = 0;
   }
-  if (lcount == 1 || lcount == 5) {
-    for (int i = 0 ; i < NUM_LEDS; i++ ) {
-      set_color_led(i, 255, 255, 0);
-    }
-    leds[s].r = 0; leds[s].g = 0; leds[s].b = 0;
-  }
-  if (lcount == 2 || lcount == 4) {
-    for (int i = 0 ; i < NUM_LEDS; i++ ) {
-      set_color_led(i, 255, 255, 0);
-    }
-    leds[s - 1].r = 0; leds[s - 1].g = 0; leds[s - 1].b = 0;
-    leds[s].r = 0; leds[s].g = 0; leds[s].b = 0;
-    leds[s + 1].r = 0; leds[s + 1].g = 0; leds[s + 1].b = 0;
-  }
-  if (lcount == 3) {
-    for (int i = 0 ; i < NUM_LEDS; i++ ) {
-      set_color_led(i, 255, 255, 0);
-    }
-    leds[s - 2].r = 0; leds[s - 2].g = 0; leds[s - 2].b = 0;
-    leds[s - 1].r = 0; leds[s - 1].g = 0; leds[s - 1].b = 0;
-    leds[s].r = 0; leds[s].g = 0; leds[s].b = 0;
-    leds[s + 1].r = 0; leds[s + 1].g = 0; leds[s + 1].b = 0;
-    leds[s + 2].r = 0; leds[s + 2].g = 0; leds[s + 2].b = 0;
-  }
+  leds[index] = CHSV(ihue, thissat, 255);
   LEDS.show();
-  delay(1000);
+  delay(20);
 }
 
 void loop() 
 {
-  RGBLoop();
-  Strobe(0x88, 0x11, 0x22, 10, 500, 1000);
-  pacman();
+  if(Serial.available() > 0) {
+    ledMode = Serial.parseInt();
+  }
+  switch(ledMode) {
+  case 0: break;
+  case 1: RGBLoop(); break;
+  case 2: Strobe(0x88, 0x11, 0x22, 10, 500, 1000); break;
+  case 3: rainbow_loop(); break;
+  }
 }
